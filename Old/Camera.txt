@@ -1,9 +1,12 @@
+int viewport_distance =1;
+int viewport_width = 1;
+int viewport_height = 1;
 class Camera{
 
-    PVector location = new PVector(0,0,-10);
+    PVector location = new PVector(0,0,0);
     Object3D viewPlane; 
     Camera(){
-        viewPlane=Plane(location.x,location.y,location.z,width,height,color(255));
+        viewPlane=Plane(location.x,location.y,location.z+viewport_distance,viewport_width,viewport_height,color(255));
 
     }
 

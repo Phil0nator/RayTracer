@@ -1,0 +1,32 @@
+PVector CanvasToViewport(int x, int y) {
+    return new PVector(x*viewport_width/width, y*viewport_height/height, viewport_distance);
+    //return null;
+}
+
+class Ray{
+
+    PVector location;
+    PVector velocity;
+    PVector drawCoord;
+    PVector D;
+    int maxBounces;
+    int maxLife;
+    color c;
+
+    Ray(int x, int y){
+        this.location = cam.location.copy();
+        this.drawCoord=new PVector(x,y);
+        this.D = CanvasToViewport(x-width/2,y-height/2);
+        //this.velocity = new PVector(x-cam.location.x,y-cam.location.y,viewport_distance).normalize();
+        rays.add(this);
+    }
+
+    void d(){
+
+        stroke(c);
+        point(drawCoord.x,drawCoord.y);
+
+    }
+
+
+}

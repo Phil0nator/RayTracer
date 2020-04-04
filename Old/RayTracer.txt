@@ -1,0 +1,50 @@
+Camera cam;
+ArrayList<Sphere> spheres;
+ArrayList<Ray> rays;
+
+void setup(){
+
+    size(1000,700);
+    spheres = new ArrayList<Sphere>(0);
+    rays = new ArrayList<Ray>(0);
+
+    cam = new Camera();
+    //Sphere tester = new Sphere(new PVector(0,0,-20),new Material(color(255,0,0)), 10);
+    //Sphere tester2 = new Sphere(new PVector(0,0,20),new Material(color(0,255,0)), 10);
+    //Sphere tester3 = new Sphere(new PVector(20,0,-20),new Material(color(0,0,255)), 10);
+    Sphere tester4 = new Sphere(new PVector(0,-1,4),new Material(color(0,255,255)), 1);
+
+
+    cam.send();
+}
+
+
+void draw(){
+
+
+    //background(0);
+    for(Sphere s : spheres){
+        for(Ray r: rays){
+            int discrim = (int)s.intersects(r);
+            if(discrim>1){
+                r.c = s.mat.c;
+            }
+            else if (discrim==1){
+                r.c = s.mat.c;
+                r.c = color(red(r.c),green(r.c),blue(r.c),127);
+            }
+            else if (discrim==0){
+                r.c=color(100,100,100);
+            }
+            else{
+                r.c=color(100,100,100);
+            }
+
+        
+            r.d();
+        }
+    }
+    rays.clear();
+    cam.send();
+
+}

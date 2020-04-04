@@ -73,13 +73,18 @@ class Sphere{
         spheres.add(this);
     }
 
-    boolean intersects(Ray r){
+    float intersects(Ray r){
 
-        PVector sphere_to_ray = r.drawCoord.sub(loc.x,loc.y,loc.z);
-        PVector b = r.velocity.mult(2.0).dot(sphere_to_ray); 
-        PVector c = sphere_to_ray.dot(sphere_to_ray)-r*r;
-        PVector discriminant = b.mult(b).sub(c.mult(4));
-        return discriminant >= 0;
+        PVector sphere_to_ray = r.location.sub(loc.x,loc.y,loc.z);
+
+        float k1 = r.D.dot(r.D);
+
+        float b = sphere_to_ray.dot(r.D)*2; 
+        float c = sphere_to_ray.dot(sphere_to_ray)-this.r*this.r;
+        float discriminant = b*b - 4*c*k1;
+        return discriminant;
+
+        
 
     }
 

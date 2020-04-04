@@ -14,168 +14,138 @@ import java.io.IOException;
 
 public class RayTracer extends PApplet {
 
-Camera cam;
-ArrayList<Sphere> spheres;
-ArrayList<Ray> rays;
+public final float Infinity = 99999999.99f;
+
+int bgColor = color(100,100,100);
+PVector camaraPosition = new PVector(0,0,0);
+int viewport_dim = 1;
+int viewport_dist = 1;
+public PVector canvasToViewport(int x, int y){
+    
+    return new PVector((float)x *viewport_dim/width,(float) y*viewport_dim/height, viewport_dist);
+
+}
+
+ArrayList<Object3D> objects = new ArrayList<Object3D>(0);
+
+abstract class Object3D{
+
+    PVector location;
+    int c;
+
+    Object3D(PVector l, int C){
+        location=l;
+        c=C;
+        objects.add(this);
+    }
+
+    public PVector collides(PVector origin, PVector direction){
+        println("Something has gone very very wrong here");
+        return new PVector(Infinity, Infinity); 
+    }
+
+}
+
+class Sphere extends Object3D{
+
+    float r;
+
+    Sphere(PVector l, int C, float rad){
+        super(l,C);
+        r=rad;
+    }
+
+    public @Override
+    PVector collides(PVector origin, PVector direction){
+        PVector oc = origin.sub(location);
+        float k1 = direction.dot(direction);
+        float k2 = 2.0f*oc.dot(direction);
+        float k3 = oc.dot(oc) - r*r;
+
+        float discriminant = k2*k2 - 4.0f*k1*k3;
+        if(discriminant<0){
+            return new PVector(Infinity,Infinity);
+        }
+
+        float t1 = (-k2+sqrt(discriminant))/(2.0f*k1);
+        float t2 = (-k2 - sqrt(discriminant))/(2.0f*k1);
+        println("SOMETHING DIFFERENT");
+        return new PVector(t1,t2);
+    }
+
+}
+
+
+public int trace(PVector origin, PVector direction, int min, float max){
+
+    float closest = Infinity;
+    Object3D closestObject = null;
+
+    for(Object3D o : objects){
+
+        PVector ts = o.collides(origin,direction);
+        
+        if(ts.x < closest && min < ts.x && ts.x < max){
+            closest = ts.x;
+            closestObject = o;
+        }
+        if(ts.y < closest && min < ts.y && ts.y < max){
+            closest =ts.y;
+            closestObject = o;
+        }
+        
+
+    }
+    if(closestObject == null){
+            return bgColor;
+        }
+
+    return closestObject.c;
+
+
+
+}
+public void placeRayPixel(int x, int y){
+
+    x+=width/2;
+    y+=height/2;
+    point(x,y);
+
+}
+
 
 public void setup(){
 
     
-    spheres = new ArrayList<Sphere>(0);
-    rays = new ArrayList<Ray>(0);
 
-    cam = new Camera();
-    Sphere tester = new Sphere(new PVector(-1,-1,1),new Material(color(255,0,0)), 2);
-
-
-
-    cam.send();
+    setupScene();
 }
+
 
 
 
 public void draw(){
 
+    for(int x = -width/2;x < width/2;x++){
 
-    background(0);
-    for(Sphere s : spheres){
-        for(Ray r: rays){
-            if(s.intersects(r)){
-                
-            }
-        }
-    }
+        for(int y = -height/2; y< height/2; y++){
 
-}
-class Camera{
-
-    PVector location = new PVector(0,0,-10);
-    Object3D viewPlane; 
-    Camera(){
-        viewPlane=Plane(location.x,location.y,location.z,width,height,color(255));
-
-    }
-
-    public void send(){
-
-        for(int i = 0; i < width;i++){
-            for(int j = 0 ; j < height;j++){
-
-                Ray r = new Ray(i,j);
-
-            }
+            PVector dir = canvasToViewport(x,y);
+            int dc = trace(camaraPosition, dir,1,Infinity);
+            stroke(dc);
+            placeRayPixel(x,y);
         }
 
     }
-
-
-}
-class Vert{
-    PVector location;
-    Vert(float x, float y, float z){
-        location=new PVector(x,y,z);
-    }
-}
-class Face{
-    Vert[] vertices = new Vert[4];
-    Material material;
-    Face(Vert a, Vert b, Vert c, Vert d, Material mat){
-        vertices[0]=a;
-        vertices[1]=b;
-        vertices[2]=c;
-        vertices[3]=d;
-        material = mat;
-    }
-}
-
-class Material{
-    int c;
-    Material(int inp){
-        c=inp;
-    }
-}
-
-
-class Object3D{
-    Vert[] vertices;
-    Face[] faces;
-    Material material;
-    PVector location;
-
-
-    Object3D(Vert[] verts, Face[] faces, Material mat, PVector loc){
-        vertices=verts;
-        this.faces = faces;
-        material=mat;
-        location=loc;
-    }
-
-    public void translate(int x, int y, int z){
-        for(int i = 0 ; i < vertices.length;i++){
-            vertices[i].location.add(x,y,z);
-        }
-        this.location.add(x,y,z);
-    }
-
-
-
+    sphereA.r*=2;
+    println("FRAME");
 
 }
-
-
-public Object3D Plane(float x, float y, float z, int width, int height, int c){
-
-    PVector loc = new PVector(x,y,z);
-    Vert[] verts = {new Vert(x,y,z),new Vert(x+width,y,z),new Vert(x,y+height,z),new Vert(x+width,y+height,z)};
-    Material mat = new Material(c);
-    Face[] faces= {new Face(verts[0],verts[1],verts[2],verts[3],mat)};
-    Object3D output = new Object3D(verts,faces,mat,loc);
-    return output;
+Sphere sphereA;
+public void setupScene(){
+    sphereA = new Sphere(new PVector(0,0,3),color(255,0,0),1);
 }
-
-class Sphere{
-
-    PVector loc = new PVector(0,0,0);
-    Material mat = new Material(0);
-    float r = 0;
-    Sphere(PVector location, Material material, float radius){
-        loc=location;
-        mat=material;
-        r=radius;
-        spheres.add(this);
-    }
-
-    public boolean intersects(Ray r){
-
-        PVector sphere_to_ray = r.drawCoord.sub(loc.x,loc.y,loc.z);
-        PVector b = r.velocity.mult(2.0f).dot(sphere_to_ray); 
-        PVector c = sphere_to_ray.dot(sphere_to_ray)-r*r;
-        PVector discriminant = b.mult(b).sub(c.mult(4));
-        return discriminant >= 0;
-
-    }
-
-
-}
-class Ray{
-
-    PVector location;
-    PVector velocity;
-    PVector drawCoord;
-    int maxBounces;
-    int maxLife;
-    int c;
-
-    Ray(int x, int y){
-        this.drawCoord=new PVector(x,y);
-        this.velocity = new PVector(x-cam.x,y-cam.y,1).normalize();
-        rays.add(this);
-    }
-
-
-
-}
-  public void settings() {  size(500,500); }
+  public void settings() {  size(1000,800); }
   static public void main(String[] passedArgs) {
     String[] appletArgs = new String[] { "RayTracer" };
     if (passedArgs != null) {
