@@ -141,3 +141,67 @@ double computeLighting(PVector point, PVector normal, PVector view, double spec)
     return intensity;
 
 }
+
+
+
+
+class RotationMatrix{
+
+    double[][] m = {
+            {.7071, 0, -.7071},
+            {0,1,0},
+            {.7071,0,.7071}
+        };
+    RotationMatrix(){
+        
+    }
+
+    RotationMatrix(double[][] inp){
+        m=inp;
+    }
+
+    PVector applyTo(PVector subject){
+
+        float[] buffer = {0.0,0.0,0.0};
+        float[] source = subject.array();
+        for(int i = 0 ; i < 3;i++){
+            for(int j = 0 ; j < 3;j++){
+
+                buffer[i] += source[j]*m[i][j];
+
+            }
+        }
+        return new PVector(buffer[0], buffer[1], buffer[2]);
+
+    }  
+
+    void rotateX(double rad){
+
+
+
+    }
+    void rotateZ(double rad){
+        m[1][0]+=rad;
+        //m[1][1]+=rad;
+        m[1][2]+=rad;
+
+
+    }
+    void rotateY(double rad){
+
+        
+        m[2][2]+=rad;
+
+        
+    }
+
+    void lookAt(PVector loc){
+
+
+
+
+
+    }
+
+
+}

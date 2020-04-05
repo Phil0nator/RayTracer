@@ -1,3 +1,8 @@
+/////////
+// @author: Philo Kaulkin
+// (Inspiration and assistance) https://www.gabrielgambetta.com/computer-graphics-from-scratch/
+////////
+
 final double Infinity = Double.POSITIVE_INFINITY;
 final double Epsilon = 0.00001;
 final int MAX_BOUNCES = 5;
@@ -5,7 +10,7 @@ final int MAX_BOUNCES = 5;
 
 color bgColor = color(100,100,100);
 PVector camaraPosition = new PVector(0,0,0);
-PVector camaraDirection = new PVector(1,1,1);
+RotationMatrix camaraRotation = new RotationMatrix();
 int viewport_dim = 1;
 int viewport_dist = 1;
 PVector canvasToViewport(int x, int y){
@@ -86,27 +91,99 @@ void placeRayPixel(int x, int y){
 
 }
 
-
+void drawRayPixelToBuffer(int x, int y, color c,PImage b){
+    while(isPlacing==true){}
+    isPlacing=true;
+    b.set(x,y,c);
+    isPlacing=false;
+}
+int threads = 0;
+int maxThreads = 10;
 void setup(){
 
     size(1000,1000);
     setupScene();
+    buffer = createImage(width,height,ARGB);
+    thread("renderChunk");
+    delay(50);
+    thread("renderChunk");
+    delay(50);
+    thread("renderChunk");
+    delay(50);
+    thread("renderChunk");
+    
+
+}
+void renderChunk(){
+    
+    while(true){
+
+        for(int x = -width/2;x < width/2;x++){
+
+            for(int y = -height/2; y< height/2; y++){
+
+                //PVector dir = camaraRotation.applyTo(canvasToViewport(x,y));
+                PVector dir = canvasToViewport(x,y);
+                color dc = trace(camaraPosition, dir,0,Infinity,0);
+                
+                drawRayPixelToBuffer(x+width/2,y+height/2,dc,buffer);
+            }
+            
+        }
+
+
+
+    }
+
+}
+void reverseRender(){
+    println("reverse");
+    while(true){
+
+        for(int x = width/2;x < -width/2;x--){
+
+            for(int y = height/2; y< -height/2; y--){
+
+                //PVector dir = camaraRotation.applyTo(canvasToViewport(x,y));
+                PVector dir = canvasToViewport(x,y);
+                color dc = trace(camaraPosition, dir,0,Infinity,0);
+                drawRayPixelToBuffer(x+width/2,y+height/2,dc,buffer);
+            }
+            
+        }
+
+
+
+    }
+
 }
 
-
-
+PImage buffer;
+boolean isPlacing =false;
 void draw(){
-    background(0);
+
+    //background(0);
+
+    
+
+
+
+    /*
     for(int x = -width/2;x < width/2;x++){
 
         for(int y = -height/2; y< height/2; y++){
 
+            //PVector dir = camaraRotation.applyTo(canvasToViewport(x,y));
             PVector dir = canvasToViewport(x,y);
             color dc = trace(camaraPosition, dir,0,Infinity,0);
             stroke(dc);
             placeRayPixel(x,y);
         }
-
     }
 
+    camaraRotation.rotateY(.1);
+    */
+    image(buffer,0,0);
+    camaraPosition.x+=.001;
+    camaraPosition.y+=.001;
 }

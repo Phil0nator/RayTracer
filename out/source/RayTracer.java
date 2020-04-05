@@ -14,6 +14,11 @@ import java.io.IOException;
 
 public class RayTracer extends PApplet {
 
+/////////
+// @author: Philo Kaulkin
+// (Inspiration and assistance) https://www.gabrielgambetta.com/computer-graphics-from-scratch/
+////////
+
 final double Infinity = Double.POSITIVE_INFINITY;
 final double Epsilon = 0.00001f;
 final int MAX_BOUNCES = 5;
@@ -21,7 +26,7 @@ final int MAX_BOUNCES = 5;
 
 int bgColor = color(100,100,100);
 PVector camaraPosition = new PVector(0,0,0);
-PVector camaraDirection = new PVector(1,1,1);
+RotationMatrix camaraRotation = new RotationMatrix();
 int viewport_dim = 1;
 int viewport_dist = 1;
 public PVector canvasToViewport(int x, int y){
@@ -102,29 +107,101 @@ public void placeRayPixel(int x, int y){
 
 }
 
-
+public void drawRayPixelToBuffer(int x, int y, int c,PImage b){
+    while(isPlacing==true){}
+    isPlacing=true;
+    b.set(x,y,c);
+    isPlacing=false;
+}
+int threads = 0;
+int maxThreads = 10;
 public void setup(){
 
     
     setupScene();
+    buffer = createImage(width,height,ARGB);
+    thread("renderChunk");
+    delay(50);
+    thread("renderChunk");
+    delay(50);
+    thread("renderChunk");
+    delay(50);
+    thread("renderChunk");
+    
+
+}
+public void renderChunk(){
+    
+    while(true){
+
+        for(int x = -width/2;x < width/2;x++){
+
+            for(int y = -height/2; y< height/2; y++){
+
+                //PVector dir = camaraRotation.applyTo(canvasToViewport(x,y));
+                PVector dir = canvasToViewport(x,y);
+                int dc = trace(camaraPosition, dir,0,Infinity,0);
+                
+                drawRayPixelToBuffer(x+width/2,y+height/2,dc,buffer);
+            }
+            
+        }
+
+
+
+    }
+
+}
+public void reverseRender(){
+    println("reverse");
+    while(true){
+
+        for(int x = width/2;x < -width/2;x--){
+
+            for(int y = height/2; y< -height/2; y--){
+
+                //PVector dir = camaraRotation.applyTo(canvasToViewport(x,y));
+                PVector dir = canvasToViewport(x,y);
+                int dc = trace(camaraPosition, dir,0,Infinity,0);
+                drawRayPixelToBuffer(x+width/2,y+height/2,dc,buffer);
+            }
+            
+        }
+
+
+
+    }
+
 }
 
-
-
+PImage buffer;
+boolean isPlacing =false;
 public void draw(){
-    background(0);
+
+    //background(0);
+
+    
+
+
+
+    /*
     for(int x = -width/2;x < width/2;x++){
 
         for(int y = -height/2; y< height/2; y++){
 
+            //PVector dir = camaraRotation.applyTo(canvasToViewport(x,y));
             PVector dir = canvasToViewport(x,y);
-            int dc = trace(camaraPosition, dir,0,Infinity,0);
+            color dc = trace(camaraPosition, dir,0,Infinity,0);
             stroke(dc);
             placeRayPixel(x,y);
         }
-
     }
 
+    camaraRotation.rotateY(.1);
+    */
+    image(buffer,0,0);
+    camaraPosition.x+=.001f;
+    camaraPosition.y+=.001f;
 }
 
 ArrayList<Object3D> objects = new ArrayList<Object3D>(0);
@@ -270,12 +347,76 @@ public double computeLighting(PVector point, PVector normal, PVector view, doubl
 
 }
 
+
+
+
+class RotationMatrix{
+
+    double[][] m = {
+            {.7071f, 0, -.7071f},
+            {0,1,0},
+            {.7071f,0,.7071f}
+        };
+    RotationMatrix(){
+        
+    }
+
+    RotationMatrix(double[][] inp){
+        m=inp;
+    }
+
+    public PVector applyTo(PVector subject){
+
+        float[] buffer = {0.0f,0.0f,0.0f};
+        float[] source = subject.array();
+        for(int i = 0 ; i < 3;i++){
+            for(int j = 0 ; j < 3;j++){
+
+                buffer[i] += source[j]*m[i][j];
+
+            }
+        }
+        return new PVector(buffer[0], buffer[1], buffer[2]);
+
+    }  
+
+    public void rotateX(double rad){
+
+
+
+    }
+    public void rotateZ(double rad){
+        m[1][0]+=rad;
+        //m[1][1]+=rad;
+        m[1][2]+=rad;
+
+
+    }
+    public void rotateY(double rad){
+
+        
+        m[2][2]+=rad;
+
+        
+    }
+
+    public void lookAt(PVector loc){
+
+
+
+
+
+    }
+
+
+}
+
 public void setupScene(){
 
-    Sphere sphereA = new Sphere(new PVector(0,0,5),color(255,255,255),1);
+    Sphere sphereA = new Sphere(new PVector(0,0,10),color(255,255,255),1);
     sphereA.specular = 0;
     sphereA.reflective = .3f;
-    Sphere sphereB = new Sphere(new PVector(-2,-1,3),color(255,0,255),1);
+    Sphere sphereB = new Sphere(new PVector(-2,-1,5),color(255,0,255),1);
     sphereB.specular = 100;
     sphereB.reflective=0;
 
@@ -285,6 +426,13 @@ public void setupScene(){
 
     Light point = PointLight(new PVector(5,0,0),color(255,255,255));
     point.intensity = 1;
+
+
+    for(int i = 1 ; i < 10; i++){
+        new Sphere(new PVector(i,i,i+5),color(255,100,0),1);
+    }
+
+
 }
   public void settings() {  size(1000,1000); }
   static public void main(String[] passedArgs) {
