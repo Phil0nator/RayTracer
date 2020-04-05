@@ -9,58 +9,20 @@ PVector canvasToViewport(int x, int y){
     return new PVector((float)x *viewport_dim/width,(float) y*viewport_dim/height, viewport_dist);
 
 }
-
-ArrayList<Object3D> objects = new ArrayList<Object3D>(0);
-
-abstract class Object3D{
-
-    PVector location;
-    color c;
-
-    Object3D(PVector l, color C){
-        location=l;
-        println(location);
-        c=C;
-        objects.add(this);
+float clampColor(double inp){
+    if(inp<0){
+        return 0.0;
     }
-
-    PVector collides(PVector origin, PVector direction){
-        println("Something has gone very very wrong here");
-        return new PVector(0,0); 
+    if(inp>255){
+        return 255.0;
     }
-
+    return (float)inp;
 }
 
-class Sphere extends Object3D{
-
-    double r;
-
-    Sphere(PVector l, color C, double rad){
-        super(l,C);
-        r=rad;
-    }
-
-    @Override
-    PVector collides(PVector origin, PVector direction){
-        PVector oc = origin.copy().sub(location);
-
-        double k1 = direction.dot(direction);
-        double k2 = 2.0*oc.dot(direction);
-        double k3 = oc.dot(oc) - r*r;
-
-        double discriminant = k2*k2 - 4.0*k1*k3;
-        if(discriminant<0){
-            return new PVector((float)Infinity,(float)Infinity);
-        }
-        
-        double t1 = (-k2+sqrt((float)discriminant))/(2.0*k1);
-        double t2 = (-k2 - sqrt((float)discriminant))/(2.0*k1);
-
-        return new PVector((float)t1,(float)t2);
-    }
-
+color Multiply(double fac, color c){
+    color out = color(clampColor(red(c)*fac),clampColor(green(c)*fac),clampColor(blue(c)*fac),alpha(c));
+    return out;
 }
-
 
 color trace(PVector origin, PVector direction, int min, double max){
 
@@ -85,9 +47,12 @@ color trace(PVector origin, PVector direction, int min, double max){
     }
     if(closestObject == null){
             return bgColor;
-        }
+    }
 
-    return closestObject.c;
+    PVector spacePoint = origin.copy().add(direction.copy().mult((float)closest));
+    PVector normal = spacePoint.copy().sub(closestObject.location);
+    normal = normal.mult(1.0/normal.mag());
+    return Multiply(computeLighting(spacePoint, normal, direction.copy().mult(-1), closestObject.specular), closestObject.c);
 
 
 
@@ -110,9 +75,8 @@ void setup(){
 
 
 
-
 void draw(){
-
+    background(0);
     for(int x = -width/2;x < width/2;x++){
 
         for(int y = -height/2; y< height/2; y++){
