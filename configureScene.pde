@@ -1,17 +1,17 @@
-Sphere sphereA;
-Sphere sphereB;
-Light ambient;
-Light pointer;
 
 void setupScene(){
-    sphereA = new Sphere(new PVector(-1,-1,10),color(255,0,0),2);
-    sphereA.specular = 1000;
-    sphereB = new Sphere(new PVector(1,1,5),color(0,255,0),1.5);
-    sphereB.specular = -1;
-    ambient = AmbientLight(new PVector(10,10,-10), color(255,255,255));
-    ambient.intensity = 1;
-    
-    pointer = PointLight(new PVector(0,-10,0), color(255,255,255));
-    pointer.intensity = 1;
 
+    Sphere sphereA = new Sphere(new PVector(0,0,5),color(255,255,255),1);
+    sphereA.specular = 0;
+    sphereA.reflective = .3;
+    Sphere sphereB = new Sphere(new PVector(-2,-1,3),color(255,0,255),1);
+    sphereB.specular = 100;
+    sphereB.reflective=0;
+
+    Light ambient = AmbientLight(new PVector(0,0,0), color(255,255,255));
+    ambient.intensity = .5;
+
+
+    Light point = PointLight(new PVector(5,0,0),color(255,255,255));
+    point.intensity = 1;
 }

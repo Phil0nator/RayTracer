@@ -14,10 +14,14 @@ import java.io.IOException;
 
 public class RayTracer extends PApplet {
 
-public final double Infinity = Double.POSITIVE_INFINITY;
+final double Infinity = Double.POSITIVE_INFINITY;
+final double Epsilon = 0.00001f;
+final int MAX_BOUNCES = 5;
+
 
 int bgColor = color(100,100,100);
 PVector camaraPosition = new PVector(0,0,0);
+PVector camaraDirection = new PVector(1,1,1);
 int viewport_dim = 1;
 int viewport_dist = 1;
 public PVector canvasToViewport(int x, int y){
@@ -39,9 +43,11 @@ public int Multiply(double fac, int c){
     int out = color(clampColor(red(c)*fac),clampColor(green(c)*fac),clampColor(blue(c)*fac),alpha(c));
     return out;
 }
+public int Add(int a, int b){
+    return color(clampColor(red(a)+red(b)), clampColor(green(a)+green(b)), clampColor(blue(a)+blue(b)), clampColor(alpha(a)+alpha(b)));
+}
 
-public int trace(PVector origin, PVector direction, int min, double max){
-
+public Intersection findClosest(PVector origin, PVector direction, double min, double max){
     double closest = Infinity;
     Object3D closestObject = null;
 
@@ -57,19 +63,34 @@ public int trace(PVector origin, PVector direction, int min, double max){
             closest =ts.y;
             closestObject = o;
         }
-        
-        
-
     }
-    if(closestObject == null){
+        
+        
+    return new Intersection(closestObject, closest);
+}
+
+public int trace(PVector origin, PVector direction, double min, double max, int depth){
+
+    
+    Intersection closestObject = findClosest(origin,direction,min,max);
+    if(closestObject.object == null){
             return bgColor;
     }
+    double closest = closestObject.t;
 
     PVector spacePoint = origin.copy().add(direction.copy().mult((float)closest));
-    PVector normal = spacePoint.copy().sub(closestObject.location);
+    PVector normal = spacePoint.copy().sub(closestObject.object.location);
     normal = normal.mult(1.0f/normal.mag());
-    return Multiply(computeLighting(spacePoint, normal, direction.copy().mult(-1), closestObject.specular), closestObject.c);
+    int local_color = Multiply(computeLighting(spacePoint, normal, direction.copy().mult(-1), closestObject.object.specular), closestObject.object.c);
 
+    if(depth > MAX_BOUNCES || closestObject.object.reflective == 0){
+        return local_color;
+    }
+
+    PVector newRay = reflect(direction.mult(-1),normal);
+    int reflectedColor = trace(spacePoint, newRay, Epsilon, Infinity, depth+1);
+
+    return Add(Multiply(1-closestObject.object.reflective, local_color), Multiply(closestObject.object.reflective,reflectedColor));
 
 
 }
@@ -85,7 +106,6 @@ public void placeRayPixel(int x, int y){
 public void setup(){
 
     
-
     setupScene();
 }
 
@@ -98,7 +118,7 @@ public void draw(){
         for(int y = -height/2; y< height/2; y++){
 
             PVector dir = canvasToViewport(x,y);
-            int dc = trace(camaraPosition, dir,0,Infinity);
+            int dc = trace(camaraPosition, dir,0,Infinity,0);
             stroke(dc);
             placeRayPixel(x,y);
         }
@@ -109,13 +129,21 @@ public void draw(){
 
 ArrayList<Object3D> objects = new ArrayList<Object3D>(0);
 ArrayList<Light> lights = new ArrayList<Light>(0);
+class Intersection{
+    double t;
+    Object3D object;
+    Intersection(Object3D o, double T){
+        t=T;
+        object=o;
+    }
+}
 
 abstract class Object3D{
 
     PVector location;
     int c;
     double specular = 10;
-
+    double reflective = 0.01f;
     Object3D(PVector l, int C){
         location=l;
         println(location);
@@ -178,6 +206,7 @@ class Light{
         location=l.copy();
         c=C;
         lights.add(this);
+        direction=dir;
     }
 
 
@@ -192,7 +221,9 @@ public Light PointLight(PVector l, int c){
 public Light DirectionlLight(PVector l, PVector dir, int c){
     return new Light(l, new PVector(0,0,0), c, LightType.DIRECTIONAL);
 }
-
+public PVector reflect(PVector ray, PVector normal){
+    return normal.mult(2).mult(normal.dot(ray)).sub(ray);
+}
 
 public double computeLighting(PVector point, PVector normal, PVector view, double spec){
 
@@ -205,11 +236,20 @@ public double computeLighting(PVector point, PVector normal, PVector view, doubl
             intensity+=l.intensity;
         }else{
             PVector v;
+            double maxDist;
             if(l.type == LightType.POINT){
                 v = l.location.copy().sub(point);
+                maxDist = 1;
             }else{
                 v = l.location.copy();
+                maxDist = Infinity;
             }
+            //check for shadows:
+            Intersection shadow = findClosest(point, v, Epsilon, maxDist);
+            if(shadow.object !=null){
+                continue;
+            }
+
             double normalDot = normal.dot(v);
             if(normalDot>0){
                 intensity+=l.intensity*normalDot/(normal_length*v.mag());
@@ -229,22 +269,22 @@ public double computeLighting(PVector point, PVector normal, PVector view, doubl
     return intensity;
 
 }
-Sphere sphereA;
-Sphere sphereB;
-Light ambient;
-Light pointer;
 
 public void setupScene(){
-    sphereA = new Sphere(new PVector(-1,-1,10),color(255,0,0),2);
-    sphereA.specular = 1000;
-    sphereB = new Sphere(new PVector(1,1,5),color(0,255,0),1.5f);
-    sphereB.specular = -1;
-    ambient = AmbientLight(new PVector(10,10,-10), color(255,255,255));
-    ambient.intensity = 1;
-    
-    pointer = PointLight(new PVector(0,-10,0), color(255,255,255));
-    pointer.intensity = 1;
 
+    Sphere sphereA = new Sphere(new PVector(0,0,5),color(255,255,255),1);
+    sphereA.specular = 0;
+    sphereA.reflective = .3f;
+    Sphere sphereB = new Sphere(new PVector(-2,-1,3),color(255,0,255),1);
+    sphereB.specular = 100;
+    sphereB.reflective=0;
+
+    Light ambient = AmbientLight(new PVector(0,0,0), color(255,255,255));
+    ambient.intensity = .5f;
+
+
+    Light point = PointLight(new PVector(5,0,0),color(255,255,255));
+    point.intensity = 1;
 }
   public void settings() {  size(1000,1000); }
   static public void main(String[] passedArgs) {

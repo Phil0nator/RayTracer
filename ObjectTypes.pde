@@ -1,13 +1,21 @@
 
 ArrayList<Object3D> objects = new ArrayList<Object3D>(0);
 ArrayList<Light> lights = new ArrayList<Light>(0);
+class Intersection{
+    double t;
+    Object3D object;
+    Intersection(Object3D o, double T){
+        t=T;
+        object=o;
+    }
+}
 
 abstract class Object3D{
 
     PVector location;
     color c;
     double specular = 10;
-
+    double reflective = 0.01;
     Object3D(PVector l, color C){
         location=l;
         println(location);
@@ -70,6 +78,7 @@ class Light{
         location=l.copy();
         c=C;
         lights.add(this);
+        direction=dir;
     }
 
 
@@ -84,7 +93,9 @@ Light PointLight(PVector l, color c){
 Light DirectionlLight(PVector l, PVector dir, color c){
     return new Light(l, new PVector(0,0,0), c, LightType.DIRECTIONAL);
 }
-
+PVector reflect(PVector ray, PVector normal){
+    return normal.mult(2).mult(normal.dot(ray)).sub(ray);
+}
 
 double computeLighting(PVector point, PVector normal, PVector view, double spec){
 
@@ -97,11 +108,20 @@ double computeLighting(PVector point, PVector normal, PVector view, double spec)
             intensity+=l.intensity;
         }else{
             PVector v;
+            double maxDist;
             if(l.type == LightType.POINT){
                 v = l.location.copy().sub(point);
+                maxDist = 1;
             }else{
                 v = l.location.copy();
+                maxDist = Infinity;
             }
+            //check for shadows:
+            Intersection shadow = findClosest(point, v, Epsilon, maxDist);
+            if(shadow.object !=null){
+                continue;
+            }
+
             double normalDot = normal.dot(v);
             if(normalDot>0){
                 intensity+=l.intensity*normalDot/(normal_length*v.mag());
