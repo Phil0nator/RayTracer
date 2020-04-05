@@ -1,4 +1,4 @@
-public final float Infinity = 99999999.99;
+public final double Infinity = Double.POSITIVE_INFINITY;
 
 color bgColor = color(100,100,100);
 PVector camaraPosition = new PVector(0,0,0);
@@ -19,64 +19,67 @@ abstract class Object3D{
 
     Object3D(PVector l, color C){
         location=l;
+        println(location);
         c=C;
         objects.add(this);
     }
 
     PVector collides(PVector origin, PVector direction){
         println("Something has gone very very wrong here");
-        return new PVector(Infinity, Infinity); 
+        return new PVector(0,0); 
     }
 
 }
 
 class Sphere extends Object3D{
 
-    float r;
+    double r;
 
-    Sphere(PVector l, color C, float rad){
+    Sphere(PVector l, color C, double rad){
         super(l,C);
         r=rad;
     }
 
     @Override
     PVector collides(PVector origin, PVector direction){
-        PVector oc = origin.sub(location);
-        float k1 = direction.dot(direction);
-        float k2 = 2.0*oc.dot(direction);
-        float k3 = oc.dot(oc) - r*r;
+        PVector oc = origin.copy().sub(location);
 
-        float discriminant = k2*k2 - 4.0*k1*k3;
+        double k1 = direction.dot(direction);
+        double k2 = 2.0*oc.dot(direction);
+        double k3 = oc.dot(oc) - r*r;
+
+        double discriminant = k2*k2 - 4.0*k1*k3;
         if(discriminant<0){
-            return new PVector(Infinity,Infinity);
+            return new PVector((float)Infinity,(float)Infinity);
         }
+        
+        double t1 = (-k2+sqrt((float)discriminant))/(2.0*k1);
+        double t2 = (-k2 - sqrt((float)discriminant))/(2.0*k1);
 
-        float t1 = (-k2+sqrt(discriminant))/(2.0*k1);
-        float t2 = (-k2 - sqrt(discriminant))/(2.0*k1);
-        println("SOMETHING DIFFERENT");
-        return new PVector(t1,t2);
+        return new PVector((float)t1,(float)t2);
     }
 
 }
 
 
-color trace(PVector origin, PVector direction, int min, float max){
+color trace(PVector origin, PVector direction, int min, double max){
 
-    float closest = Infinity;
+    double closest = Infinity;
     Object3D closestObject = null;
 
     for(Object3D o : objects){
 
         PVector ts = o.collides(origin,direction);
         
-        if(ts.x < closest && min < ts.x && ts.x < max){
+        if(ts.x < closest && min < ts.x){
             closest = ts.x;
             closestObject = o;
         }
-        if(ts.y < closest && min < ts.y && ts.y < max){
+        if(ts.y < closest && min < ts.y){
             closest =ts.y;
             closestObject = o;
         }
+        
         
 
     }
@@ -91,16 +94,16 @@ color trace(PVector origin, PVector direction, int min, float max){
 }
 void placeRayPixel(int x, int y){
 
-    x+=width/2;
-    y+=height/2;
-    point(x,y);
+    //x+=width/2;
+    //y+=height/2;
+    point(x+width/2,y+height/2);
 
 }
 
 
 void setup(){
 
-    size(1000,800);
+    size(1000,1000);
 
     setupScene();
 }
@@ -115,13 +118,11 @@ void draw(){
         for(int y = -height/2; y< height/2; y++){
 
             PVector dir = canvasToViewport(x,y);
-            color dc = trace(camaraPosition, dir,1,Infinity);
+            color dc = trace(camaraPosition, dir,0,Infinity);
             stroke(dc);
             placeRayPixel(x,y);
         }
 
     }
-    sphereA.r*=2;
-    println("FRAME");
 
 }

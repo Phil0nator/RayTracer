@@ -14,7 +14,7 @@ import java.io.IOException;
 
 public class RayTracer extends PApplet {
 
-public final float Infinity = 99999999.99f;
+public final double Infinity = Double.POSITIVE_INFINITY;
 
 int bgColor = color(100,100,100);
 PVector camaraPosition = new PVector(0,0,0);
@@ -35,64 +35,67 @@ abstract class Object3D{
 
     Object3D(PVector l, int C){
         location=l;
+        println(location);
         c=C;
         objects.add(this);
     }
 
     public PVector collides(PVector origin, PVector direction){
         println("Something has gone very very wrong here");
-        return new PVector(Infinity, Infinity); 
+        return new PVector(0,0); 
     }
 
 }
 
 class Sphere extends Object3D{
 
-    float r;
+    double r;
 
-    Sphere(PVector l, int C, float rad){
+    Sphere(PVector l, int C, double rad){
         super(l,C);
         r=rad;
     }
 
     public @Override
     PVector collides(PVector origin, PVector direction){
-        PVector oc = origin.sub(location);
-        float k1 = direction.dot(direction);
-        float k2 = 2.0f*oc.dot(direction);
-        float k3 = oc.dot(oc) - r*r;
+        PVector oc = origin.copy().sub(location);
 
-        float discriminant = k2*k2 - 4.0f*k1*k3;
+        double k1 = direction.dot(direction);
+        double k2 = 2.0f*oc.dot(direction);
+        double k3 = oc.dot(oc) - r*r;
+
+        double discriminant = k2*k2 - 4.0f*k1*k3;
         if(discriminant<0){
-            return new PVector(Infinity,Infinity);
+            return new PVector((float)Infinity,(float)Infinity);
         }
+        
+        double t1 = (-k2+sqrt((float)discriminant))/(2.0f*k1);
+        double t2 = (-k2 - sqrt((float)discriminant))/(2.0f*k1);
 
-        float t1 = (-k2+sqrt(discriminant))/(2.0f*k1);
-        float t2 = (-k2 - sqrt(discriminant))/(2.0f*k1);
-        println("SOMETHING DIFFERENT");
-        return new PVector(t1,t2);
+        return new PVector((float)t1,(float)t2);
     }
 
 }
 
 
-public int trace(PVector origin, PVector direction, int min, float max){
+public int trace(PVector origin, PVector direction, int min, double max){
 
-    float closest = Infinity;
+    double closest = Infinity;
     Object3D closestObject = null;
 
     for(Object3D o : objects){
 
         PVector ts = o.collides(origin,direction);
         
-        if(ts.x < closest && min < ts.x && ts.x < max){
+        if(ts.x < closest && min < ts.x){
             closest = ts.x;
             closestObject = o;
         }
-        if(ts.y < closest && min < ts.y && ts.y < max){
+        if(ts.y < closest && min < ts.y){
             closest =ts.y;
             closestObject = o;
         }
+        
         
 
     }
@@ -107,9 +110,9 @@ public int trace(PVector origin, PVector direction, int min, float max){
 }
 public void placeRayPixel(int x, int y){
 
-    x+=width/2;
-    y+=height/2;
-    point(x,y);
+    //x+=width/2;
+    //y+=height/2;
+    point(x+width/2,y+height/2);
 
 }
 
@@ -131,21 +134,21 @@ public void draw(){
         for(int y = -height/2; y< height/2; y++){
 
             PVector dir = canvasToViewport(x,y);
-            int dc = trace(camaraPosition, dir,1,Infinity);
+            int dc = trace(camaraPosition, dir,0,Infinity);
             stroke(dc);
             placeRayPixel(x,y);
         }
 
     }
-    sphereA.r*=2;
-    println("FRAME");
 
 }
 Sphere sphereA;
+Sphere sphereB;
 public void setupScene(){
-    sphereA = new Sphere(new PVector(0,0,3),color(255,0,0),1);
+    sphereA = new Sphere(new PVector(-1,-1,3),color(255,0,0),2);
+    sphereB = new Sphere(new PVector(1,1,5),color(0,255,0),1.5f);
 }
-  public void settings() {  size(1000,800); }
+  public void settings() {  size(1000,1000); }
   static public void main(String[] passedArgs) {
     String[] appletArgs = new String[] { "RayTracer" };
     if (passedArgs != null) {
