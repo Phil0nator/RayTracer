@@ -1,6 +1,6 @@
 /////////
 // @author: Philo Kaulkin
-// (Inspiration and assistance) https://www.gabrielgambetta.com/computer-graphics-from-scratch/
+// (resource) https://www.gabrielgambetta.com/computer-graphics-from-scratch/
 ////////
 
 final double Infinity = Double.POSITIVE_INFINITY;
